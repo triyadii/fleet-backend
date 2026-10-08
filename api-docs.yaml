@@ -1,0 +1,168 @@
+openapi: 3.0.3
+info:
+  title: Fleet Tracking API
+  description: API Documentation for Fleet Live Tracking system
+  version: 1.0.0
+servers:
+  - url: http://fleet.local
+    description: Local server
+paths:
+  /api/telemetry:
+    post:
+      summary: Submit vehicle telemetry data
+      description: Endpoint for mobile app/GPS device to submit current location, speed, and optional camera snapshot.
+      operationId: storeTelemetry
+      tags:
+        - Telemetry
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - vehicle_id
+                - lat
+                - lng
+                - speed
+                - timestamp
+              properties:
+                vehicle_id:
+                  type: integer
+                  description: The ID of the vehicle from the database.
+                  example: 1
+                lat:
+                  type: number
+                  format: float
+                  description: Current latitude of the vehicle.
+                  example: -6.200000
+                lng:
+                  type: number
+                  format: float
+                  description: Current longitude of the vehicle.
+                  example: 106.816666
+                speed:
+                  type: number
+                  format: float
+                  description: Current speed of the vehicle in km/h.
+                  example: 60.5
+                timestamp:
+                  type: string
+                  format: date-time
+                  description: The timestamp of when the location was recorded.
+                  example: "2026-10-08T10:30:00Z"
+                snapshot:
+                  type: string
+                  format: binary
+                  description: Optional image snapshot (jpeg/png) from the vehicle camera (max 2MB).
+      responses:
+        '201':
+          description: Data received successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Data received successfully"
+                  data:
+                    $ref: '#/components/schemas/TrackingLog'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  errors:
+                    type: object
+
+  /api/telemetry/latest:
+    get:
+      summary: Get latest fleet positions
+      description: Returns the most recent tracking data for all active vehicles. Polled by the admin dashboard.
+      operationId: getLatestTelemetry
+      tags:
+        - Telemetry
+      responses:
+        '200':
+          description: A list of the latest vehicle positions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        vehicle_id:
+                          type: integer
+                          example: 1
+                        plate_number:
+                          type: string
+                          example: "B 1234 ABC"
+                        lat:
+                          type: number
+                          format: float
+                          example: -6.200000
+                        lng:
+                          type: number
+                          format: float
+                          example: 106.816666
+                        speed:
+                          type: number
+                          format: float
+                          example: 60.5
+                        timestamp:
+                          type: string
+                          format: date-time
+                          example: "2026-10-08T10:30:00Z"
+                        snapshot_url:
+                          type: string
+                          nullable: true
+                          example: "http://localhost:8000/storage/snapshots/image.jpg"
+
+components:
+  schemas:
+    TrackingLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 100
+        vehicle_id:
+          type: integer
+          example: 1
+        latitude:
+          type: number
+          format: float
+          example: -6.200000
+        longitude:
+          type: number
+          format: float
+          example: 106.816666
+        speed:
+          type: number
+          format: float
+          example: 60.5
+        snapshot_path:
+          type: string
+          nullable: true
+          example: "snapshots/image.jpg"
+        recorded_at:
+          type: string
+          format: date-time
+          example: "2026-10-08T10:30:00.000000Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-10-08T10:30:05.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-10-08T10:30:05.000000Z"

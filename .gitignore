@@ -25,3 +25,10 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Additional dotfiles & directories
+/.agents
+/.ai
+/.gemini
+.*.swp
+.DS_Store

@@ -7,8 +7,8 @@
     },
     "servers": [
         {
-            "url": "http://fleet.local",
-            "description": "Local API Server"
+            "url": "https://dicotriyadi.site/fleet",
+            "description": "Production API Server"
         }
     ],
     "paths": {
@@ -192,6 +192,39 @@
                 "responses": {
                     "200": {
                         "description": "A list of the latest vehicle positions"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/telemetry/{vehicle_id}": {
+            "get": {
+                "tags": [
+                    "Telemetry"
+                ],
+                "summary": "Get telemetry history for a specific vehicle",
+                "operationId": "ca07def8dd7ba8fdbd5e653d1a5c5fdb",
+                "parameters": [
+                    {
+                        "name": "vehicle_id",
+                        "in": "path",
+                        "description": "ID of the vehicle",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A list of tracking logs for the vehicle"
+                    },
+                    "404": {
+                        "description": "Vehicle not found"
                     }
                 },
                 "security": [

@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/telemetry', [TelemetryController::class, 'store']);
     Route::get('/telemetry/latest', [TelemetryController::class, 'latest']);
+    Route::get('/telemetry/{vehicle_id}', [TelemetryController::class, 'history']);
 
     Route::get('/vehicles', [VehicleController::class, 'index']);
     Route::post('/vehicles', [VehicleController::class, 'store']);

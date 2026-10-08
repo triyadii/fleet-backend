@@ -14,8 +14,8 @@ use OpenApi\Attributes as OA;
     title: "Fleet Tracking API"
 )]
 #[OA\Server(
-    url: "http://fleet.local",
-    description: "Local API Server"
+    url: "https://dicotriyadi.site/fleet",
+    description: "Production API Server"
 )]
 #[OA\SecurityScheme(
     securityScheme: "sanctum",
@@ -114,6 +114,51 @@ class TelemetryController extends Controller
 
         return response()->json([
             'data' => $latestPositions
+        ]);
+    }
+    #[OA\Get(
+        path: "/api/telemetry/{vehicle_id}",
+        summary: "Get telemetry history for a specific vehicle",
+        tags: ["Telemetry"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "vehicle_id",
+                in: "path",
+                required: true,
+                description: "ID of the vehicle",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "A list of tracking logs for the vehicle"),
+            new OA\Response(response: 404, description: "Vehicle not found")
+        ]
+    )]
+    public function history($vehicle_id)
+    {
+        $vehicle = Vehicle::findOrFail($vehicle_id);
+        
+        $logs = TrackingLog::where('vehicle_id', $vehicle->id)
+            ->orderBy('recorded_at', 'desc')
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'lat' => (float) $log->latitude,
+                    'lng' => (float) $log->longitude,
+                    'speed' => (float) $log->speed,
+                    'timestamp' => $log->recorded_at,
+                    'snapshot_url' => $log->snapshot_path ? asset('storage/' . $log->snapshot_path) : null,
+                ];
+            });
+            
+        return response()->json([
+            'data' => [
+                'vehicle_id' => $vehicle->id,
+                'plate_number' => $vehicle->plate_number,
+                'logs' => $logs
+            ]
         ]);
     }
 }

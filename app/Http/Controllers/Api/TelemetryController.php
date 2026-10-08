@@ -94,7 +94,7 @@ class TelemetryController extends Controller
     public function latest()
     {
         $vehicles = Vehicle::with(['trackingLogs' => function ($query) {
-            $query->latest('recorded_at')->take(1);
+            $query->orderBy('recorded_at', 'desc')->orderBy('id', 'desc')->take(1);
         }])->get();
 
         $latestPositions = $vehicles->map(function ($vehicle) {
@@ -141,6 +141,7 @@ class TelemetryController extends Controller
         
         $logs = TrackingLog::where('vehicle_id', $vehicle->id)
             ->orderBy('recorded_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get()
             ->map(function ($log) {
                 return [

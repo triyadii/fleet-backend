@@ -237,6 +237,55 @@
             font-weight: 600;
         }
 
+        /* Monitor Grid */
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .driver-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .driver-cam {
+            width: 100%;
+            height: 180px;
+            background: #000;
+            object-fit: cover;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .driver-info {
+            padding: 16px;
+        }
+        .driver-plate {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .driver-status-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .status-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-fokus { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .status-mengantuk { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .status-berisik { background: rgba(234, 179, 8, 0.15); color: #eab308; }
+        .status-tidak-ditempat { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+        .status-default { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+
         /* Views */
         .main-view {
             display: none;
@@ -558,6 +607,7 @@
             
             <div class="nav-menu">
                 <div class="nav-item active" onclick="switchTab('tracking')" id="nav-tracking">🗺️ Live Tracking</div>
+                <div class="nav-item" onclick="switchTab('monitor')" id="nav-monitor">📷 Driver Monitor</div>
                 <div class="nav-item" onclick="switchTab('users')" id="nav-users">👥 Manage Users</div>
                 <div class="nav-item" onclick="switchTab('vehicles')" id="nav-vehicles">🚗 Manage Vehicles</div>
             </div>
@@ -573,6 +623,18 @@
             <div id="map"></div>
             <!-- Overlay Reset Button inside map area -->
             <button class="action-btn" style="position: absolute; top: 20px; right: 20px; z-index: 1000; background: var(--primary); color: white; padding: 10px 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);" onclick="resetView()" id="reset-btn" title="Reset View & Show All">📍 Reset Map View</button>
+        </div>
+
+        <!-- Driver Monitor View -->
+        <div id="monitor-view" class="main-view">
+            <div class="crud-container" style="max-width: 1600px;">
+                <div class="crud-header">
+                    <h2>Realtime Driver Monitor</h2>
+                </div>
+                <div class="monitor-grid" id="monitor-grid">
+                    <!-- driver cards will be injected here -->
+                </div>
+            </div>
         </div>
 
         <!-- Users View -->
@@ -628,7 +690,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const API_URL = '/fleet/api';
+        const API_URL = '/api';
         let map = null;
         let markers = {};
         let fetchInterval = null;
@@ -761,6 +823,7 @@
                 if (res.status === 401) { logout(); return; }
                 const json = await res.json();
                 updateTrackingUI(json.data);
+                updateMonitorUI(json.data);
             } catch (err) {}
         }
 
@@ -871,6 +934,53 @@
                 map.fitBounds(bounds, {padding: [50, 50], maxZoom: 15});
                 window.mapFitted = true;
             }
+        }
+        
+        function updateMonitorUI(vehicles) {
+            const grid = document.getElementById('monitor-grid');
+            if (!vehicles || vehicles.length === 0) {
+                grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">No vehicles active.</div>';
+                return;
+            }
+            grid.innerHTML = '';
+            vehicles.forEach(v => {
+                const logTime = new Date(v.timestamp);
+                const isOnline = (new Date() - logTime) < (5 * 60 * 1000);
+                
+                let focusTag = v.fokus ? '<span class="status-tag status-fokus">Fokus</span>' : '';
+                let ngantukTag = v.mengantuk ? '<span class="status-tag status-mengantuk">Mengantuk</span>' : '';
+                let berisikTag = v.berisik ? '<span class="status-tag status-berisik">Berisik</span>' : '';
+                let awayTag = v.tidak_ditempat ? '<span class="status-tag status-tidak-ditempat">Tidak Ditempat</span>' : '';
+                
+                if (!v.fokus && !v.mengantuk && !v.berisik && !v.tidak_ditempat) {
+                    focusTag = '<span class="status-tag status-default">Normal</span>';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'driver-card';
+                
+                // For preview without image we use placehold.co
+                const imgUrl = v.snapshot_url ? v.snapshot_url : 'https://placehold.co/600x400/1e293b/94a3b8?text=No+Camera';
+                
+                card.innerHTML = `
+                    <img src="${imgUrl}" class="driver-cam" alt="Driver Cam">
+                    <div class="driver-info">
+                        <div class="driver-plate">🚗 ${v.plate_number}</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+                            Speed: ${v.speed} km/h <br>
+                            Updated: ${logTime.toLocaleTimeString()} <br>
+                            Status: ${isOnline ? '<span style="color:#22c55e; font-weight:600;">Online</span>' : '<span style="color:#ef4444; font-weight:600;">Offline</span>'}
+                        </div>
+                        <div class="driver-status-tags">
+                            ${focusTag}
+                            ${ngantukTag}
+                            ${berisikTag}
+                            ${awayTag}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
         
         let pathMarkers = [];

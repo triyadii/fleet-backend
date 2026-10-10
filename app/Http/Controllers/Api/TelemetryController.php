@@ -41,7 +41,11 @@ class TelemetryController extends Controller
                         new OA\Property(property: "lng", type: "number", format: "float", example: 106.816666),
                         new OA\Property(property: "speed", type: "number", format: "float", example: 60.5),
                         new OA\Property(property: "timestamp", type: "string", format: "date-time", example: "2026-10-08T10:30:00Z"),
-                        new OA\Property(property: "snapshot", type: "string", format: "binary", description: "Optional image snapshot")
+                        new OA\Property(property: "snapshot", type: "string", format: "binary", description: "Optional image snapshot"),
+                        new OA\Property(property: "fokus", type: "boolean", description: "Driver focus status", example: true),
+                        new OA\Property(property: "mengantuk", type: "boolean", description: "Driver sleepiness status", example: false),
+                        new OA\Property(property: "berisik", type: "boolean", description: "Cabin noise status", example: false),
+                        new OA\Property(property: "tidak_ditempat", type: "boolean", description: "Driver away status", example: false)
                     ]
                 )
             )
@@ -59,7 +63,11 @@ class TelemetryController extends Controller
             'lng' => 'required|numeric',
             'speed' => 'required|numeric',
             'timestamp' => 'required|date',
-            'snapshot' => 'nullable|image|max:2048'
+            'snapshot' => 'nullable|image|max:2048',
+            'fokus' => 'nullable|boolean',
+            'mengantuk' => 'nullable|boolean',
+            'berisik' => 'nullable|boolean',
+            'tidak_ditempat' => 'nullable|boolean',
         ]);
 
         $snapshotPath = null;
@@ -73,7 +81,11 @@ class TelemetryController extends Controller
             'longitude' => $validated['lng'],
             'speed' => $validated['speed'],
             'snapshot_path' => $snapshotPath,
-            'recorded_at' => $validated['timestamp']
+            'recorded_at' => $validated['timestamp'],
+            'fokus' => $request->boolean('fokus'),
+            'mengantuk' => $request->boolean('mengantuk'),
+            'berisik' => $request->boolean('berisik'),
+            'tidak_ditempat' => $request->boolean('tidak_ditempat'),
         ]);
 
         return response()->json([
@@ -107,6 +119,10 @@ class TelemetryController extends Controller
                 'speed' => $latestLog ? (float) $latestLog->speed : null,
                 'timestamp' => $latestLog ? $latestLog->recorded_at : null,
                 'snapshot_url' => ($latestLog && $latestLog->snapshot_path) ? asset('storage/' . $latestLog->snapshot_path) : null,
+                'fokus' => $latestLog ? (bool) $latestLog->fokus : false,
+                'mengantuk' => $latestLog ? (bool) $latestLog->mengantuk : false,
+                'berisik' => $latestLog ? (bool) $latestLog->berisik : false,
+                'tidak_ditempat' => $latestLog ? (bool) $latestLog->tidak_ditempat : false,
             ];
         })->filter(function($item) {
             return $item['lat'] !== null;
@@ -151,6 +167,10 @@ class TelemetryController extends Controller
                     'speed' => (float) $log->speed,
                     'timestamp' => $log->recorded_at,
                     'snapshot_url' => $log->snapshot_path ? asset('storage/' . $log->snapshot_path) : null,
+                    'fokus' => (bool) $log->fokus,
+                    'mengantuk' => (bool) $log->mengantuk,
+                    'berisik' => (bool) $log->berisik,
+                    'tidak_ditempat' => (bool) $log->tidak_ditempat,
                 ];
             });
             
